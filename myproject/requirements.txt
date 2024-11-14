@@ -1,0 +1,5 @@
+Flask
+flask-cors
+flask-mysqldb
+flask-bcrypt
+flask-jwt-extended
