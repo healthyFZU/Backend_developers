@@ -1,9 +1,9 @@
-# myapp/log.py
 from flask import Blueprint, request, jsonify
 import json
 from flask_mysqldb import MySQL
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
+
 log_blueprint = Blueprint('log', __name__)
 
 mysql = MySQL()
@@ -11,10 +11,9 @@ bcrypt = Bcrypt()
 jwt = JWTManager()
 
 # 用户打卡 API
-@log_blueprint.route('/log', methods=['POST'])
-def user_log():
+@log_blueprint.route('/user/<int:userId>/log', methods=['POST'])
+def user_log(userId):
     data = request.get_json()
-
     # 从请求中获取打卡数据
     year = data.get('year')
     month = data.get('month')
@@ -32,29 +31,28 @@ def user_log():
     cur = mysql.connection.cursor()
 
     # 查询是否已有打卡记录
-    cur.execute("SELECT * FROM user_logs WHERE userId = -1 AND year = %s AND month = %s",
-                (year, month))
+    cur.execute("SELECT * FROM user_logs WHERE userId = %s AND year = %s AND month = %s",
+                (userId, year, month))
     existing_log = cur.fetchone()
 
     if existing_log:
         return jsonify({'message': 'You have already logged this month!'}), 400
 
     # 插入新的打卡记录，log_days 以 JSON 格式存储
-    cur.execute("INSERT INTO user_logs (userId, year, month, log_days) VALUES (-1, %s, %s, %s)",
-                (year, month, json.dumps(log_days)))  # 将 log_days 转换为 JSON 字符串
+    cur.execute("INSERT INTO user_logs (userId, year, month, log_days) VALUES (%s, %s, %s, %s)",
+                (userId, year, month, json.dumps(log_days)))  # 将 log_days 转换为 JSON 字符串
     mysql.connection.commit()
     cur.close()
 
     return jsonify({'message': 'Log created successfully!'}), 201
 
 # 查询用户打卡记录 API
-@log_blueprint.route('/logs', methods=['GET'])
-def get_user_logs():
+@log_blueprint.route('/user/<int:userId>/logs', methods=['GET'])
+def get_user_logs(userId):
     # 连接数据库
     cur = mysql.connection.cursor()
-
     # 查询所有打卡记录
-    cur.execute("SELECT * FROM user_logs")
+    cur.execute("SELECT * FROM user_logs WHERE userId = %s", (userId,))
     logs = cur.fetchall()
     cur.close()
 
@@ -72,16 +70,15 @@ def get_user_logs():
             'month': log[3],
             'log_days': json.loads(log[4]),  # 将 JSON 字符串转为 Python 对象
             'CreatedAt': log[5],
-            'UpdateAt': log[6]
+            'UpdatedAt': log[6]  # Corrected the field name to match the standard
         })
 
     return jsonify(log_data), 200
 
 # 更新用户打卡记录 API
-@log_blueprint.route('/log/<int:log_id>', methods=['PUT'])
-def update_user_log(log_id):
+@log_blueprint.route('/user/<int:userId>/log/<int:log_id>', methods=['PUT'])
+def update_user_log(userId, log_id):
     data = request.get_json()
-
     # 从请求中获取更新数据
     log_days = data.get('log_days')
 
@@ -96,9 +93,12 @@ def update_user_log(log_id):
     cur = mysql.connection.cursor()
 
     # 更新打卡记录
-    cur.execute("UPDATE user_logs SET log_days = %s WHERE Log_id = %s",
-                (json.dumps(log_days), log_id))  # 将 log_days 转换为 JSON 字符串
+    cur.execute("UPDATE user_logs SET log_days = %s WHERE userId = %s AND Log_id = %s",
+                (json.dumps(log_days), userId, log_id))  # 将 log_days 转换为 JSON 字符串
     mysql.connection.commit()
     cur.close()
 
-    return jsonify({'message': 'Log updated successfully!'}), 200
+    if cur.rowcount == 0:
+        return jsonify({'message': 'Log not found or not updated!'}), 404
+    else:
+        return jsonify({'message': 'Log updated successfully!'}), 200
