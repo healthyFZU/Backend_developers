@@ -4,7 +4,16 @@ myproject/
 │   ├── __init__.py
 │   ├── user.py
 │   ├── log.py
-│   └── other_modules.py
+│   ├── body.py
+│   ├── body_measurements.py
+│   ├── dailyIntake.py
+│   ├── dietary_habits.py
+│   ├── dishes.py
+│   ├── health_info.py
+│   ├── ingredients.py
+│   ├── merchants.py
+│   └── review.py
+│ 
 ├── README.txt
 ├── requirements.txt
 └── app.py
