@@ -17,11 +17,12 @@ myproject/
 │   ├── health_info.py
 │   ├── ingredients.py
 │   ├── merchants.py
-│   └── review.py
+│   ├── review.py
+│   └── others   #其他蓝图
 │
 ├── uploads/
 │
 ├── README.txt
 ├── requirements.txt
-└── app.py
+└── app.py    #程序运行处
 
